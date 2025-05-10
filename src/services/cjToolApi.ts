@@ -34,6 +34,9 @@ export interface GenerateDocumentData {
 export interface FoldConstantData {
     foldedCode: string;
 }
+export interface FindUnusedVariablesData {
+    modifiedCode: string;
+}
 
 export const cjToolService = {
     generateSignature: async (code: string): Promise<ApiResponse<GenerateSignatureData>> => {
@@ -82,6 +85,16 @@ export const cjToolService = {
             return response.data;
         } catch (error: any) {
             const errorMessage = error.response?.data?.error || error.message || 'An unknown error occurred while folding constants.';
+            return { success: false, error: errorMessage };
+        }
+    },
+
+    findUnusedVariables: async (code: string): Promise<ApiResponse<FindUnusedVariablesData>> => {
+        try {
+            const response = await apiClient.post<ApiResponse<FindUnusedVariablesData>>('/find-unused-variables', { code });
+            return response.data;
+        } catch (error: any) {
+            const errorMessage = error.response?.data?.error || error.message || 'An unknown error occurred while finding unused variables.';
             return { success: false, error: errorMessage };
         }
     },

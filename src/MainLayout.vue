@@ -22,13 +22,13 @@
         </n-layout-header>
 
         <n-layout-content>
-            <n-split direction="horizontal" :default-size="0.6" :min=0.2 :max=0.8 resizable>
+            <n-split direction="horizontal" :min=0.2 :max=0.8 resizable>
                 <template #1>
                     <n-card title="输入" style="height: 100%; display: flex; flex-direction: column;"
                         :content-style="{ display: 'flex' }">
                         <n-input type="textarea" v-model:value="inputCode" placeholder="Enter Cangjie code here..."
                             :resizable="false" style="height: 100%;"
-                            :input-props="{ style: { fontSize: editorFontSize + 'px' } }" />
+                            :input-props="{ style: { fontSize: editorFontSize + 'px' }, onKeydown: handleInputKeydown }" />
                     </n-card>
                 </template>
 
@@ -110,15 +110,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, inject, onMounted, computed, type Ref } from 'vue';
+import { ref, watch, inject, onMounted, computed, type Ref, nextTick } from 'vue';
 import { useMessage } from 'naive-ui';
-import { cjToolService, updateApiBaseUrl, type ApiResponse, type GenerateSignatureData, type RefactorVariableData, type GenerateDocumentData, type FoldConstantData } from './services/cjToolApi';
+import { cjToolService, updateApiBaseUrl, type ApiResponse, type GenerateSignatureData, type RefactorVariableData, type GenerateDocumentData, type FoldConstantData, type FindUnusedVariablesData } from './services/cjToolApi';
 
 const message = useMessage();
 
 const injectedIsDarkMode = inject<Ref<boolean>>('isDarkMode', ref(false));
 
-type Operation = 'generateSignature' | 'refactorVariable' | 'generateDocument' | 'foldConstant';
+type Operation = 'generateSignature' | 'refactorVariable' | 'generateDocument' | 'foldConstant' | 'findUnusedVariables';
 
 const selectedOperation = ref<Operation>('generateSignature');
 const operationOptions = [
@@ -126,6 +126,7 @@ const operationOptions = [
     { label: '重命名标识符', value: 'refactorVariable' },
     { label: '生成注释文档', value: 'generateDocument' },
     { label: '折叠代码常量', value: 'foldConstant' },
+    { label: '查找无用变量', value: 'findUnusedVariables' },
 ];
 
 const getSelectedOperationLabel = () => {
@@ -135,8 +136,10 @@ const getSelectedOperationLabel = () => {
 
 const inputCode = ref<string>(`class C <: I1 {
     private var mySize = 1*2
+    private var unusedVar = 100
 
     func myfunc(a: Float64, n: Int64) : Float64 {
+        var tempUnused = 50
         for(i in mySize..=n) {
             a *= (i + 2 * 42) + mySize
         }
@@ -145,6 +148,7 @@ const inputCode = ref<string>(`class C <: I1 {
 
     func myfunc2(n: Int64) : Float64 {
         var a = 1 + 2
+        var anotherUnused = "hello"
         for(i in 0..=n) {
             a *= (i + 3 * 4)
         }
@@ -155,10 +159,11 @@ const inputCode = ref<string>(`class C <: I1 {
     }
 
     func testRange() {
-        let r5 = 0..10   
+        let r5 = 0..10
         let r6 = 0..10 : 1 + 2
+        let unusedInRange = 99
 
-        let r7 = 10..3*4+2 : 1 
+        let r7 = 10..3*4+2 : 1
         let r8 = 0..10 : 1 + 2 - 3
         let r9 = 10..=0 : (1 + 2) * 3
         let r10 = (1+2-3+4-5+6)..=10 : -1
@@ -195,7 +200,7 @@ onMounted(() => {
     const storedFontSize = localStorage.getItem(EDITOR_FONT_SIZE_STORAGE_KEY);
     if (storedFontSize) {
         const parsedSize = parseInt(storedFontSize, 10);
-        if (!isNaN(parsedSize) && parsedSize >= 8 && parsedSize <= 36) { // 简单校验
+        if (!isNaN(parsedSize) && parsedSize >= 8 && parsedSize <= 36) {
             editorFontSize.value = parsedSize;
         }
     }
@@ -215,6 +220,25 @@ watch(editorFontSize, (newSize) => {
         localStorage.setItem(EDITOR_FONT_SIZE_STORAGE_KEY, newSize.toString());
     }
 });
+
+const handleInputKeydown = (event: KeyboardEvent) => {
+    if (event.key === 'Tab') {
+        event.preventDefault();
+
+        const target = event.target as HTMLTextAreaElement;
+        const start = target.selectionStart;
+        const end = target.selectionEnd;
+        const tabCharacter = '    ';
+
+        inputCode.value = inputCode.value.substring(0, start) +
+            tabCharacter +
+            inputCode.value.substring(end);
+            
+        nextTick(() => {
+            target.selectionStart = target.selectionEnd = start + tabCharacter.length;
+        });
+    }
+};
 
 const processCode = async () => {
     if (showControlsModal.value) {
@@ -284,6 +308,16 @@ const processCode = async () => {
                     message.success('代码常量已折叠！');
                 } else {
                     errorMessage.value = response.error || '折叠代码常量失败。';
+                }
+                break;
+            case 'findUnusedVariables':
+                response = await cjToolService.findUnusedVariables(inputCode.value);
+                if (response.success && response.data) {
+                    const modifiedCode = (response.data as FindUnusedVariablesData).modifiedCode;
+                    outputResult.value = modifiedCode;
+                    message.success('无用变量已标记！');
+                } else {
+                    errorMessage.value = response.error || '查找无用变量失败。';
                 }
                 break;
             default:
