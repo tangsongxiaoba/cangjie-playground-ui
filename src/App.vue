@@ -1,30 +1,44 @@
-<script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
-</script>
-
 <template>
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="/vite.svg" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://vuejs.org/" target="_blank">
-      <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
-    </a>
-  </div>
-  <HelloWorld msg="Vite + Vue" />
+  <n-config-provider :theme="theme" style="height: 100%;">
+    <n-message-provider>
+      <MainLayout />
+    </n-message-provider>
+  </n-config-provider>
 </template>
 
-<style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
-}
-</style>
+<script setup lang="ts">
+import { ref, computed, onMounted, watch, provide } from 'vue';
+import { darkTheme } from 'naive-ui';
+
+import MainLayout from './MainLayout.vue';
+
+const isDarkMode = ref(false);
+const theme = computed(() => (isDarkMode.value ? darkTheme : null));
+
+watch(isDarkMode, (newValue) => {
+  localStorage.setItem('cangjie-dark-mode', newValue.toString());
+  if (newValue) {
+    document.body.classList.add('dark-mode');
+  } else {
+    document.body.classList.remove('dark-mode');
+  }
+});
+
+onMounted(() => {
+  const savedDarkMode = localStorage.getItem('cangjie-dark-mode');
+  if (savedDarkMode) {
+    isDarkMode.value = savedDarkMode === 'true';
+  } else {
+    // 如果 localStorage 没有记录，则根据系统偏好设置
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    isDarkMode.value = prefersDark;
+  }
+  if (isDarkMode.value) {
+    document.body.classList.add('dark-mode');
+  } else {
+    document.body.classList.remove('dark-mode');
+  }
+});
+
+provide('isDarkMode', isDarkMode);
+</script>
