@@ -1,5 +1,5 @@
 <template>
-  <n-config-provider :theme="theme" style="height: 100%;">
+  <n-config-provider :theme="theme" :hljs="hljs" style="height: 100%;">
     <n-message-provider>
       <MainLayout />
     </n-message-provider>
@@ -9,6 +9,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, provide } from 'vue';
 import { darkTheme } from 'naive-ui';
+import hljs from 'highlight.js/lib/core'
+import cangjie from './lib/highlight/cangjie.ts'
+
+hljs.registerLanguage('cangjie', cangjie)
 
 import MainLayout from './MainLayout.vue';
 

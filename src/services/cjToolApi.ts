@@ -1,32 +1,37 @@
-import axios from 'axios';
+import axios, { type AxiosInstance } from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/api/cj-tool';
+const DEFAULT_API_BASE_URL = 'http://localhost:8080/api/cj-tool';
 
-const apiClient = axios.create({
-    baseURL: API_BASE_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
+let apiClient: AxiosInstance;
 
-// 定义通用的响应类型
-export interface ApiResponse<T> { // 添加 export
+export function updateApiBaseUrl(baseUrl: string) {
+    const effectiveBaseUrl = baseUrl || DEFAULT_API_BASE_URL;
+    apiClient = axios.create({
+        baseURL: effectiveBaseUrl,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
+updateApiBaseUrl(localStorage.getItem('cangjie-backend-api-url') || DEFAULT_API_BASE_URL);
+
+export interface ApiResponse<T> {
     success: boolean;
     data?: T;
     error?: string;
 }
 
-// 具体功能的返回数据类型
-export interface GenerateSignatureData { // 添加 export
+export interface GenerateSignatureData {
     signature: string;
 }
-export interface RefactorVariableData { // 添加 export
+export interface RefactorVariableData {
     refactoredCode: string;
 }
-export interface GenerateDocumentData { // 添加 export
+export interface GenerateDocumentData {
     documentedCode: string;
 }
-export interface FoldConstantData { // 添加 export
+export interface FoldConstantData {
     foldedCode: string;
 }
 
@@ -61,9 +66,9 @@ export const cjToolService = {
         }
     },
 
-    generateDocument: async (code: string, path: string): Promise<ApiResponse<GenerateDocumentData>> => {
+    generateDocument: async (code: string, path: string, apiKey: string, apiUrl: string, modelName: string): Promise<ApiResponse<GenerateDocumentData>> => {
         try {
-            const response = await apiClient.post<ApiResponse<GenerateDocumentData>>('/generate-document', { code, path });
+            const response = await apiClient.post<ApiResponse<GenerateDocumentData>>('/generate-document', { code, path, apiKey, apiUrl, modelName});
             return response.data;
         } catch (error: any) {
             const errorMessage = error.response?.data?.error || error.message || 'An unknown error occurred while generating document.';
