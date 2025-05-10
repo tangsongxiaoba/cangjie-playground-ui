@@ -134,39 +134,89 @@ const getSelectedOperationLabel = () => {
     return option ? option.label : selectedOperation.value;
 };
 
-const inputCode = ref<string>(`class C <: I1 {
-    private var mySize = 1*2
-    private var unusedVar = 100
-
-    func myfunc(a: Float64, n: Int64) : Float64 {
-        var tempUnused = 50
-        for(i in mySize..=n) {
-            a *= (i + 2 * 42) + mySize
+const inputCode = ref<string>(`class AdvancedCalculator <: ILogger {
+    public var lastResult: Float64 = 0.0
+    private var calculationCount: Int64 = 0
+    private var historyCapacity: Int64 = 100 * 2
+    private var unusedProperty: String = "This is not used"
+    
+    public func log(message: String): Bool {
+        if(logLevel > 0) {
+            return true
         }
-        return a
+        let unusedInLog: Int64 = 55
+        return false
     }
 
-    func myfunc2(n: Int64) : Float64 {
-        var a = 1 + 2
-        var anotherUnused = "hello"
-        for(i in 0..=n) {
-            a *= (i + 3 * 4)
+    public func performCalculation(operand1: Float64, operand2: Float64, operationType: String): Float64 {
+        var result: Float64 = 0.0
+        let fixedBonus: Float64 = 1.0 + 0.5 * 2.0
+        var unusedLocalInCalc: Bool = true
+        
+        if(operationType == "add") {
+            result = operand1 + operand2 + fixedBonus
+        } else if(operationType == "subtract") {
+            result = operand1 - operand2 + fixedBonus
+        } else if(operationType == "multiply") {
+            let interimResult = operand1 * operand2
+            result = interimResult *(10 / 4) + fixedBonus
+        } else if(operationType == "divide") {
+            if(operand2 != 0) {
+                result = operand1 / operand2 + fixedBonus
+            } else {
+                result = 0.0
+            }
         }
-        let b = ((3 * 4) + 5) + (a + 4) * (5 * 3 + 9)
-        var c = 31 / 4
-        var d = 114.514 + 111111000
-        return a / ((2.5 * 100) + 4 * a + 4)
+        
+        return result
     }
+    
+    private func utilityHelper(value: Int64, unusedParam: Bool) {
+        let localConstant =(2 + 3) * 4
+        var tempVar = value + localConstant
+        if(tempVar > 100) { }
+    }
+    
+    func testRanges() {
+        let r1 = 0 .. 10
+        let r2 =(1 + 1) ..(5 * 2):(10 / 5)
+        let r3 = 0 ..=(100 - 50)
+        var unusedInRangeLoopVar = "test"
+        
+        for(i in r2) {
+            let current = i
+        }
+    }
+}
 
-    func testRange() {
-        let r5 = 0..10
-        let r6 = 0..10 : 1 + 2
-        let unusedInRange = 99
+func formatGreeting(name: String, age: Int64): String {
+    let baseGreeting = "Hello"
+    let unusedGlobalFuncVar: Int64 = 1000
+    if(age >(10 + 8)) {
+        return "you are an adult of age"
+    } else {
+        return "you are young at age"
+    }
+}
 
-        let r7 = 10..3*4+2 : 1
-        let r8 = 0..10 : 1 + 2 - 3
-        let r9 = 10..=0 : (1 + 2) * 3
-        let r10 = (1+2-3+4-5+6)..=10 : -1
+class DataProcessor {
+    var data: Array < Int64 >
+    var processed: Bool = false
+    
+    public init(inputData: Array < Int64 >) {
+        this.data = inputData
+    }
+    
+    public func isProcessed(): Bool {
+        return this.processed
+    }
+    
+    public func processData() {
+        for(item in data) {
+            let tempItem = item *(1 + 1)
+            println(tempItem)
+        }
+        this.processed = true
     }
 }`);
 const path = ref<string>('');
@@ -233,7 +283,7 @@ const handleInputKeydown = (event: KeyboardEvent) => {
         inputCode.value = inputCode.value.substring(0, start) +
             tabCharacter +
             inputCode.value.substring(end);
-            
+
         nextTick(() => {
             target.selectionStart = target.selectionEnd = start + tabCharacter.length;
         });
