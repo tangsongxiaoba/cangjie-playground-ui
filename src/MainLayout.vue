@@ -110,7 +110,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, inject, onMounted, computed, type Ref, nextTick } from 'vue';
+import { ref, watch, inject, onMounted, type Ref, nextTick } from 'vue';
 import { useMessage } from 'naive-ui';
 import { cjToolService, updateApiBaseUrl, type ApiResponse, type GenerateSignatureData, type RefactorVariableData, type GenerateDocumentData, type FoldConstantData, type FindUnusedVariablesData } from './services/cjToolApi';
 
@@ -203,34 +203,29 @@ class DataProcessor {
     var data: Array < Int64 >
     var processed: Bool = false
     
-    public init(inputData: Array < Int64 >) {
-        this.data = inputData
-    }
-    
-    public func isProcessed(): Bool {
-        return this.processed
-    }
-    
     public func processData() {
         for(item in data) {
             let tempItem = item *(1 + 1)
-            println(tempItem)
+            tempItem += 1
         }
-        this.processed = true
+        processed = true
     }
 }`);
-const path = ref<string>('');
-const oldName = ref<string>('');
-const newName = ref<string>('');
+const path = ref<string>('AdvancedCalculator.performCalculation');
+const oldName = ref<string>('operand2');
+const newName = ref<string>('newName');
 const apiKey = ref<string>('');
+const DEFAULT_APIKEY = 'sk-pqwthdmbesdwldfllezgjildshqhezpwzjbupqolzijkxjoa'
 const apiUrl = ref<string>('');
+const DEFAULT_APIURL = 'http://api.siliconflow.cn/v1/chat/completions'
 const modelName = ref<string>('');
+const DEFAULT_MODELNAME = 'deepseek-ai/DeepSeek-V3'
 
 const editorFontSize = ref<number>(13);
 const EDITOR_FONT_SIZE_STORAGE_KEY = 'cangjie-editor-font-size';
 
 const backendApiUrl = ref<string>('');
-const DEFAULT_BACKEND_API_URL = 'http://localhost:8080/api/cj-tool';
+const DEFAULT_BACKEND_API_URL = 'http://10.128.50.121:5174/api/cj-tool';
 const BACKEND_API_URL_STORAGE_KEY = 'cangjie-backend-api-url';
 
 const outputResult = ref<string | null>(null);
@@ -243,9 +238,9 @@ onMounted(() => {
     backendApiUrl.value = storedApiUrl || DEFAULT_BACKEND_API_URL;
     updateApiBaseUrl(backendApiUrl.value);
 
-    apiKey.value = localStorage.getItem('cangjie-api-key') || '';
-    apiUrl.value = localStorage.getItem('cangjie-api-url-docgen') || '';
-    modelName.value = localStorage.getItem('cangjie-model-name') || '';
+    apiKey.value = localStorage.getItem('cangjie-api-key') || DEFAULT_APIKEY;
+    apiUrl.value = localStorage.getItem('cangjie-api-url-docgen') || DEFAULT_APIURL;
+    modelName.value = localStorage.getItem('cangjie-model-name') || DEFAULT_MODELNAME;
 
     const storedFontSize = localStorage.getItem(EDITOR_FONT_SIZE_STORAGE_KEY);
     if (storedFontSize) {
