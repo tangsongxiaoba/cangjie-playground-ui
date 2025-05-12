@@ -186,6 +186,11 @@ const inputCode = ref<string>(`class AdvancedCalculator <: ILogger {
         for(i in r2) {
             let current = i
         }
+
+        var test = 10
+        for(j in 0..10+3){
+            test = test + j
+        }
     }
 }
 
