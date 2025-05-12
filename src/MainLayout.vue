@@ -11,7 +11,7 @@
                         <template #suffix>px</template>
                     </n-input-number>
                 </div>
-                <n-select v-model:value="selectedOperation" :options="operationOptions" />
+                <n-select v-model:value="selectedOperation" :options="operationOptions" :consistent-menu-width="false"/>
                 <n-button @click="showControlsModal = true" type="default">
                     配置
                 </n-button>
