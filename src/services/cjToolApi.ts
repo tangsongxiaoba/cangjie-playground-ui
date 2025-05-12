@@ -18,8 +18,16 @@ updateApiBaseUrl(localStorage.getItem('cangjie-backend-api-url') || DEFAULT_API_
 
 export interface ApiResponse<T> {
     success: boolean;
-    data?: T;
+    data?: T | ApiErrorData;
     error?: string;
+}
+
+export interface ApiErrorDataDetails {
+    nodeInfo?: string;
+}
+
+export interface ApiErrorData {
+    details?: ApiErrorDataDetails;
 }
 
 export interface GenerateSignatureData {
@@ -38,14 +46,28 @@ export interface FindUnusedVariablesData {
     modifiedCode: string;
 }
 
+function handleErrorResponse(error: any): ApiResponse<never> {
+    const errorResponseData = error.response?.data;
+    const errorMessage = errorResponseData?.error || error.message || 'An unknown error occurred.';
+
+    let response: ApiResponse<never> = { success: false, error: errorMessage };
+
+    if (errorResponseData && typeof errorResponseData === 'object' && 'data' in errorResponseData) {
+        const nestedData = errorResponseData.data as ApiErrorData;
+        if (nestedData && nestedData.details) {
+            response.data = { details: nestedData.details };
+        }
+    }
+    return response;
+}
+
 export const cjToolService = {
     generateSignature: async (code: string): Promise<ApiResponse<GenerateSignatureData>> => {
         try {
             const response = await apiClient.post<ApiResponse<GenerateSignatureData>>('/generate-signature', { code });
             return response.data;
         } catch (error: any) {
-            const errorMessage = error.response?.data?.error || error.message || 'An unknown error occurred while generating signature.';
-            return { success: false, error: errorMessage };
+            return handleErrorResponse(error);
         }
     },
 
@@ -64,18 +86,16 @@ export const cjToolService = {
             });
             return response.data;
         } catch (error: any) {
-            const errorMessage = error.response?.data?.error || error.message || 'An unknown error occurred while refactoring variable.';
-            return { success: false, error: errorMessage };
+            return handleErrorResponse(error);
         }
     },
 
     generateDocument: async (code: string, path: string, apiKey: string, apiUrl: string, modelName: string): Promise<ApiResponse<GenerateDocumentData>> => {
         try {
-            const response = await apiClient.post<ApiResponse<GenerateDocumentData>>('/generate-document', { code, path, apiKey, apiUrl, modelName});
+            const response = await apiClient.post<ApiResponse<GenerateDocumentData>>('/generate-document', { code, path, apiKey, apiUrl, modelName });
             return response.data;
         } catch (error: any) {
-            const errorMessage = error.response?.data?.error || error.message || 'An unknown error occurred while generating document.';
-            return { success: false, error: errorMessage };
+            return handleErrorResponse(error);
         }
     },
 
@@ -84,8 +104,7 @@ export const cjToolService = {
             const response = await apiClient.post<ApiResponse<FoldConstantData>>('/fold-constant', { code });
             return response.data;
         } catch (error: any) {
-            const errorMessage = error.response?.data?.error || error.message || 'An unknown error occurred while folding constants.';
-            return { success: false, error: errorMessage };
+            return handleErrorResponse(error);
         }
     },
 
@@ -94,8 +113,7 @@ export const cjToolService = {
             const response = await apiClient.post<ApiResponse<FindUnusedVariablesData>>('/find-unused-variables', { code });
             return response.data;
         } catch (error: any) {
-            const errorMessage = error.response?.data?.error || error.message || 'An unknown error occurred while finding unused variables.';
-            return { success: false, error: errorMessage };
+            return handleErrorResponse(error);
         }
     },
 };

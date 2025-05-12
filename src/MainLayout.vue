@@ -39,10 +39,16 @@
                             style="display: flex; justify-content: center; align-items: center; flex-grow: 1;">
                             <n-spin size="large" />
                         </div>
-                        <n-alert v-else-if="errorMessage" title="处理失败" type="error" closable
-                            @close="errorMessage = null" style="margin: 0px 24px">
-                            {{ errorMessage }}
-                        </n-alert>
+                        <div v-else-if="errorMessage"
+                            style="display: flex; flex-direction: column; gap: 12px; height: 100%;">
+                            <n-alert title="处理失败" type="error" closable
+                                @close="errorMessage = null; errorNodeInfo = null">
+                                {{ errorMessage }}
+                            </n-alert>
+                            <div v-if="errorNodeInfo" style="flex: 1; overflow: auto; min-height: 0;">
+                                <n-log :log="errorNodeInfo" language="cangjie" trim style="height: 100%;"/>
+                            </div>
+                        </div>
                         <div v-else-if="outputResult" style="overflow: auto; height: 100%; flex-grow: 1;
                         border: 1px solid var(--n-border-color); border-radius: var(--n-border-radius); 
                         padding: 6px; box-sizing: border-box;">
@@ -112,7 +118,7 @@
 <script setup lang="ts">
 import { ref, watch, inject, onMounted, type Ref, nextTick } from 'vue';
 import { useMessage } from 'naive-ui';
-import { cjToolService, updateApiBaseUrl, type ApiResponse, type GenerateSignatureData, type RefactorVariableData, type GenerateDocumentData, type FoldConstantData, type FindUnusedVariablesData } from './services/cjToolApi';
+import { cjToolService, updateApiBaseUrl, type ApiResponse, type ApiErrorData, type GenerateSignatureData, type RefactorVariableData, type GenerateDocumentData, type FoldConstantData, type FindUnusedVariablesData } from './services/cjToolApi';
 
 const message = useMessage();
 
@@ -235,6 +241,7 @@ const BACKEND_API_URL_STORAGE_KEY = 'cangjie-backend-api-url';
 
 const outputResult = ref<string | null>(null);
 const errorMessage = ref<string | null>(null);
+const errorNodeInfo = ref<string | null>(null);
 const isLoading = ref<boolean>(false);
 const showControlsModal = ref<boolean>(false);
 
@@ -302,6 +309,7 @@ const processCode = async () => {
     isLoading.value = true;
     outputResult.value = null;
     errorMessage.value = null;
+    errorNodeInfo.value = null;
 
     try {
         let response: ApiResponse<any>;
@@ -313,6 +321,9 @@ const processCode = async () => {
                     message.success('代码签名已生成！');
                 } else {
                     errorMessage.value = response.error || '生成签名失败。';
+                    if (response.data && (response.data as ApiErrorData).details?.nodeInfo) {
+                        errorNodeInfo.value = (response.data as ApiErrorData).details!.nodeInfo!;
+                    }
                 }
                 break;
             case 'refactorVariable':
@@ -328,6 +339,9 @@ const processCode = async () => {
                     message.success('标识符已重命名！');
                 } else {
                     errorMessage.value = response.error || '重命名标识符失败。';
+                    if (response.data && (response.data as ApiErrorData).details?.nodeInfo) {
+                        errorNodeInfo.value = (response.data as ApiErrorData).details!.nodeInfo!;
+                    }
                 }
                 break;
             case 'generateDocument':
@@ -348,6 +362,9 @@ const processCode = async () => {
                     message.success('注释文档已生成！');
                 } else {
                     errorMessage.value = response.error || '生成注释文档失败。';
+                    if (response.data && (response.data as ApiErrorData).details?.nodeInfo) {
+                        errorNodeInfo.value = (response.data as ApiErrorData).details!.nodeInfo!;
+                    }
                 }
                 break;
             case 'foldConstant':
@@ -358,6 +375,9 @@ const processCode = async () => {
                     message.success('代码常量已折叠！');
                 } else {
                     errorMessage.value = response.error || '折叠代码常量失败。';
+                    if (response.data && (response.data as ApiErrorData).details?.nodeInfo) {
+                        errorNodeInfo.value = (response.data as ApiErrorData).details!.nodeInfo!;
+                    }
                 }
                 break;
             case 'findUnusedVariables':
@@ -368,6 +388,9 @@ const processCode = async () => {
                     message.success('无用变量已标记！');
                 } else {
                     errorMessage.value = response.error || '查找无用变量失败。';
+                    if (response.data && (response.data as ApiErrorData).details?.nodeInfo) {
+                        errorNodeInfo.value = (response.data as ApiErrorData).details!.nodeInfo!;
+                    }
                 }
                 break;
             default:
@@ -380,6 +403,10 @@ const processCode = async () => {
     } catch (error: any) {
         errorMessage.value = `客户端请求错误: ${error.message || '未知错误'}`;
         message.error(errorMessage.value);
+        const rawErrorData = error.response?.data;
+        if (rawErrorData && rawErrorData.data && (rawErrorData.data as ApiErrorData).details?.nodeInfo) {
+            errorNodeInfo.value = (rawErrorData.data as ApiErrorData).details!.nodeInfo!;
+        }
     } finally {
         isLoading.value = false;
     }
